@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Interactivo de Productos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Autumn Tones -->
+    <!-- Application Structure Plan: The application is designed as an interactive, single-page product dashboard, a significant improvement over the static, multi-page PDF. The structure consists of a header, a control panel for filtering by category and sorting, and a dynamic product grid. This architecture was chosen to empower users to instantly find and compare products, which is impossible in the original format. The user flow is simple: view all items, click a category to filter, and then sort the results by price or name. This non-linear, task-oriented structure prioritizes user efficiency and ease of navigation. -->
+    <!-- Visualization & Content Choices: The primary 'visualization' is the dynamic product grid itself, which is more effective for browsing than a static list. Report Info (Product List) -> Goal (Easy Browsing/Comparison) -> Viz (Responsive Product Grid) -> Interaction (Filtering/Sorting) -> Justification (Allows users to quickly narrow down 50+ items to find what they need). The key interactions are filter buttons for categories and dropdowns/buttons for sorting. This approach, powered by vanilla JS, directly addresses the usability limitations of the source PDF. Placeholder icons (Unicode characters) are used to visually distinguish categories without relying on unavailable images, SVG, or Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fef3c7; /* amber-100 */
+        }
+        .nav-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-button.active {
+            background-color: #f97316; /* orange-500 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .product-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: 1px solid #fde68a; /* amber-200 */
+        }
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .sort-button {
+            transition: all 0.2s ease-in-out;
+        }
+       .sort-button.active {
+            background-color: #fef08a; /* amber-200 */
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-orange-900">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-orange-950 tracking-tight">Catálogo de Productos</h1>
+            <p class="mt-2 text-lg text-orange-800">Explora nuestra selección de electrónicos y accesorios.</p>
+        </header>
+
+        <main>
+            <div id="controls" class="mb-8 p-4 bg-white rounded-lg shadow-sm sticky top-0 z-10">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                    <div>
+                        <h3 class="font-semibold text-orange-800 mb-2">Filtrar por Categoría</h3>
+                        <div id="category-filters" class="flex flex-wrap gap-2">
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-orange-800 mb-2">Ordenar Por</h3>
+                        <div id="sort-controls" class="flex flex-wrap gap-2">
+                             <button class="sort-button text-sm px-3 py-1.5 bg-white border border-orange-300 rounded-full" data-sort="price" data-order="asc">Precio: Menor a Mayor</button>
+                            <button class="sort-button text-sm px-3 py-1.5 bg-white border border-orange-300 rounded-full" data-sort="price" data-order="desc">Precio: Mayor a Menor</button>
+                            <button class="sort-button text-sm px-3 py-1.5 bg-white border border-orange-300 rounded-full" data-sort="name" data-order="asc">Nombre: A-Z</button>
+                            <button class="sort-button text-sm px-3 py-1.5 bg-white border border-orange-300 rounded-full" data-sort="name" data-order="desc">Nombre: Z-A</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            </div>
+
+        </main>
+
+        <footer class="text-center mt-12 py-6 border-t border-orange-200">
+            <p class="text-orange-500">&copy; 2025 Tech Store. Todos los derechos reservados.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const products = [
+            { id: 1, name: "AURICULARES PARA ORDENADOR D1", price: 13.00, category: "Audífonos", icon: "🎧" },
+            { id: 2, name: "AUDIFONOS INALÁMBRICOS BLUETOOTH TWS-W3", price: 14.00, category: "Audífonos", icon: "🎧" },
+            { id: 3, name: "AURICULARES PARA ORDENADOR D2", price: 12.00, category: "Audífonos", icon: "🎧" },
+            { id: 4, name: "BOCINA BLUETOOTH BOC241N-20", price: 30.00, category: "Bocinas", icon: "🔊" },
+            { id: 5, name: "MOUSE CON CABLE S1", price: 4.00, category: "Accesorios", icon: "🖱️" },
+            { id: 6, name: "COMBO CARGADOR TIPO C-TIPOC PD 30W", price: 8.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 7, name: "BOCINA BLUETOOTH 3.5HS CON UNA CARGA", price: 22.00, category: "Bocinas", icon: "🔊" },
+            { id: 8, name: "BOCINA BLUETOOTH 7h CON UNA CARGA", price: 18.00, category: "Bocinas", icon: "🔊" },
+            { id: 9, name: "AURICULARES BLUETOOTH STN-28 CAT", price: 12.00, category: "Audífonos", icon: "🎧" },
+            { id: 10, name: "AURICULARES PARA ORDENADOR", price: 15.00, category: "Audífonos", icon: "🎧" },
+            { id: 11, name: "AUDIFONOS INALÁMBRICOS AUT202", price: 23.00, category: "Audífonos", icon: "🎧" },
+            { id: 12, name: "AUDIFONOS INALÁMBRICOS AUT207", price: 15.00, category: "Audífonos", icon: "🎧" },
+            { id: 13, name: "MOUSE INALÁMBRICOS RECARGABLES CON BLUETOOTH", price: 8.00, category: "Accesorios", icon: "🖱️" },
+            { id: 14, name: "AURICULARES BLUETOOTH BL-A10", price: 20.00, category: "Audífonos", icon: "🎧" },
+            { id: 15, name: "MOUSE INALAMBRICO RECARGABLE SIN BLUETOOTH", price: 7.00, category: "Accesorios", icon: "🖱️" },
+            { id: 16, name: "AURICULARES BLUETOOTH P959", price: 15.00, category: "Audífonos", icon: "🎧" },
+            { id: 17, name: "AUDIFONOS INALÁMBRICOS AUT119", price: 10.00, category: "Audífonos", icon: "🎧" },
+            { id: 18, name: "AUDIFONOS INALÁMBRICOS AUT114", price: 15.00, category: "Audífonos", icon: "🎧" },
+            { id: 19, name: "AUDIFONOS INALÁMBRICOS AUT250", price: 25.00, category: "Audífonos", icon: "🎧" },
+            { id: 20, name: "AIRPODS PRO 2", price: 20.00, category: "Audífonos", icon: "🎧" },
+            { id: 21, name: "MOUSE INALÁMBRICO", price: 7.00, category: "Accesorios", icon: "🖱️" },
+            { id: 22, name: "BATERIA PORTÁTIL 20000 mAh 10.5W MAX", price: 25.00, category: "Cargadores y Cables", icon: "🔋" },
+            { id: 23, name: "AUDIFONOS INALÁMBRICOS AUT205", price: 10.00, category: "Audífonos", icon: "🎧" },
+            { id: 24, name: "XIAOMI REDMI NOTE 13", price: 170.00, category: "Móviles", icon: "📱" },
+            { id: 25, name: "BOCINA ESTILO MADERA/E350MB", price: 25.00, category: "Bocinas", icon: "🔊" },
+            { id: 26, name: "BOCINA BLUETOOTH CON CORREA", price: 14.00, category: "Bocinas", icon: "🔊" },
+            { id: 27, name: "BOCINA BLUETOOTH SIN CORREA", price: 13.00, category: "Bocinas", icon: "🔊" },
+            { id: 28, name: "BOCINA MINI/AS", price: 6.00, category: "Bocinas", icon: "🔊" },
+            { id: 29, name: "BOCINA BLUETOOTH LENOVO/K30", price: 15.00, category: "Bocinas", icon: "🔊" },
+            { id: 30, name: "BOCINA BLUETOOTH VENTILADOR RECARGABLE", price: 12.00, category: "Bocinas", icon: "🔊" },
+            { id: 31, name: "SOPORTE PARA TELÉFONO MÓVIL", price: 5.00, category: "Accesorios", icon: "🤳" },
+            { id: 32, name: "SOPORTE MAGNÉTICO", price: 6.00, category: "Accesorios", icon: "🤳" },
+            { id: 33, name: "COMBO CARGADOR + CABLE (20W/TIPO C-IPHONE)", price: 11.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 34, name: "CABLE ADAPTADOR IPHONE OTG", price: 10.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 35, name: "CABLE ADAPTADOR USB 3.0+ TIPO C", price: 6.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 36, name: "CABLE TIPO C 2 EN 1", price: 4.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 37, name: "AUDIFONOS MANOS LIBRES CON CABLE/CK3", price: 4.00, category: "Audífonos", icon: "🎧" },
+            { id: 38, name: "AUDIFONOS MANOS LIBRES CON CABLE/M9", price: 6.00, category: "Audífonos", icon: "🎧" },
+            { id: 39, name: "AUDIFONOS MANOS LIBRES CON CABLE/C10", price: 4.00, category: "Audífonos", icon: "🎧" },
+            { id: 40, name: "AUDIFONOS MANOS LIBRES CON CABLE/K15", price: 5.00, category: "Audífonos", icon: "🎧" },
+            { id: 41, name: "AUDIFONOS MANOS LIBRES CON CABLE/G2", price: 7.00, category: "Audífonos", icon: "🎧" },
+            { id: 42, name: "AUDIFONOS MANOS LIBRES CON CABLE/G3", price: 6.00, category: "Audífonos", icon: "🎧" },
+            { id: 43, name: "AUDIFONOS INALÁMBRICOS CON BLUETOOTH", price: 8.00, category: "Audífonos", icon: "🎧" },
+            { id: 44, name: "CARGADOR DE CARGA RÁPIDA 20W (USB-TIPO C)", price: 5.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 45, name: "CARGADOR CARGA RAPIDA 66W", price: 9.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 46, name: "COMBO CARGADOR Y CABLE CARGA SUPER RÁPIDA 65W", price: 13.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 47, name: "CABLE DE CARGA", price: 5.00, category: "Cargadores y Cables", icon: "🔌" },
+            { id: 48, name: "MEMORIA FLASH MULTIFUNCIÓN 4 EN 1 (16G)", price: 6.00, category: "Almacenamiento", icon: "💾" },
+            { id: 49, name: "MEMORIA FLASH MULTIFUNCIÓN 4 EN 1 (32G)", price: 8.00, category: "Almacenamiento", icon: "💾" },
+            { id: 50, name: "XIAOMI MI BAND 8 GLOBAL", price: 40.00, category: "Accesorios", icon: "⌚" },
+            { id: 51, name: "XIAOMI POCO F7 ULTRA", price: 600.00, category: "Móviles", icon: "📱" },
+            { id: 52, name: "XIAOMI POCO X7 PRO", price: 390.00, category: "Móviles", icon: "📱" },
+            { id: 53, name: "XIAOMI REDMI NOTE 14S", price: 230.00, category: "Móviles", icon: "📱" },
+            { id: 54, name: "XIAOMI REDMI NOTE 14 PRO 5G", price: 300.00, category: "Móviles", icon: "📱" },
+            { id: 55, name: "XIAOMI REDMI NOTE 14 PRO+ 5G", price: 380.00, category: "Móviles", icon: "📱" },
+            { id: 56, name: "XIAOMI REDMI NOTE 14 5G", price: 200.00, category: "Móviles", icon: "📱" },
+            { id: 57, name: "HDD 3.5 INCH 1 TB-Seagate", price: 40.00, category: "Almacenamiento", icon: "💽" },
+            { id: 58, name: "HDD 3.5 INCH 2 TB-Seagate", price: 65.00, category: "Almacenamiento", icon: "💽" },
+            { id: 59, name: "ROUTER TP-LINK TD-W8961N", price: 45.00, category: "Accesorios", icon: "📡" }
+        ];
+
+        const productGrid = document.getElementById('product-grid');
+        const categoryFiltersContainer = document.getElementById('category-filters');
+        const sortControlsContainer = document.getElementById('sort-controls');
+
+        let currentProducts = [...products];
+        let activeCategory = 'Todos';
+        let activeSort = { sort: 'price', order: 'asc' };
+
+        const renderProducts = (productsToRender) => {
+            productGrid.innerHTML = '';
+            if (productsToRender.length === 0) {
+                productGrid.innerHTML = `<p class="col-span-full text-center text-orange-500">No se encontraron productos que coincidan con su selección.</p>`;
+                return;
+            }
+            productsToRender.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card bg-white rounded-lg p-4 flex flex-col';
+                card.innerHTML = `
+                    <div class="text-4xl mb-4 text-center">${product.icon}</div>
+                    <h3 class="font-semibold text-orange-900 flex-grow text-sm">${product.name}</h3>
+                    <div class="mt-4">
+                        <p class="text-lg font-bold text-orange-600">$${product.price.toFixed(2)}</p>
+                        <span class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full mt-2 inline-block">${product.category}</span>
+                    </div>
+                `;
+                productGrid.appendChild(card);
+            });
+        };
+        
+        const setupCategories = () => {
+            const categories = ['Todos', ...new Set(products.map(p => p.category))];
+            categoryFiltersContainer.innerHTML = categories.map(category => `
+                <button class="nav-button text-sm px-4 py-2 bg-white border border-orange-300 rounded-full ${category === 'Todos' ? 'active' : ''}" data-category="${category}">
+                    ${category}
+                </button>
+            `).join('');
+        };
+        
+        const applyFiltersAndSort = () => {
+            let filtered = activeCategory === 'Todos' ? [...products] : products.filter(p => p.category === activeCategory);
+            
+            filtered.sort((a, b) => {
+                const order = activeSort.order === 'asc' ? 1 : -1;
+                if (activeSort.sort === 'price') {
+                    return (a.price - b.price) * order;
+                }
+                if (activeSort.sort === 'name') {
+                    return a.name.localeCompare(b.name) * order;
+                }
+                return 0;
+            });
+            
+            currentProducts = filtered;
+            renderProducts(currentProducts);
+        };
+        
+        categoryFiltersContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                activeCategory = e.target.dataset.category;
+                document.querySelectorAll('#category-filters .nav-button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                applyFiltersAndSort();
+            }
+        });
+
+        sortControlsContainer.addEventListener('click', (e) => {
+             if (e.target.tagName === 'BUTTON') {
+                activeSort.sort = e.target.dataset.sort;
+                activeSort.order = e.target.dataset.order;
+                 document.querySelectorAll('#sort-controls .sort-button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                applyFiltersAndSort();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupCategories();
+            applyFiltersAndSort();
+        });
+
+    </script>
+</body>
+</html>
+
